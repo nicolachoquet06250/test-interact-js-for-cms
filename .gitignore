@@ -1,0 +1,9 @@
+.idea/
+.idea/*
+.idea/**
+node_modules/
+node_modules/*
+node_modules/**
+public/stylesheets/*.css
+public/stylesheets/*.map
+package-lock.json
