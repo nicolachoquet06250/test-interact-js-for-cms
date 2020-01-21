@@ -83,3 +83,18 @@ interact('.resize-drag')
         target.setAttribute('data-y', y);
         target.textContent = classes
     });
+
+window.addEventListener('load', () => {
+    document.querySelector('#desktop-btn').addEventListener('click', () => {
+        document.querySelector('#mode').classList.remove('tablet', 'mobile');
+        document.querySelector('#mode').classList.add('desktop');
+    });
+    document.querySelector('#mobile-btn').addEventListener('click', () => {
+        document.querySelector('#mode').classList.remove('tablet', 'desktop');
+        document.querySelector('#mode').classList.add('mobile');
+    });
+    document.querySelector('#tablet-btn').addEventListener('click', () => {
+        document.querySelector('#mode').classList.remove('mobile', 'desktop');
+        document.querySelector('#mode').classList.add('tablet');
+    });
+});

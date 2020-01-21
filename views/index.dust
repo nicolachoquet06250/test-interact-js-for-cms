@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{title}</title>
     <link rel='stylesheet' href='/stylesheets/style.css'/>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
@@ -21,16 +23,30 @@
 <body>
 <h1>{title}</h1>
 <p>Welcome to {title}</p>
-
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-3 draggable">Draggable Element</div>
-  </div>
-  <div class="row">
-    <div class="resize-drag col-1" data-last-col="1">
-      Resize from any edge or corner
+    <div class="row">
+        <div class="col-4">
+            <button id="desktop-btn" class="btn btn-primary">Desktop</button>
+        </div>
+        <div class="col-4">
+            <button id="tablet-btn" class="btn btn-primary">Tablet</button>
+        </div>
+        <div class="col-4">
+            <button id="mobile-btn" class="btn btn-primary">Mobile</button>
+        </div>
     </div>
-  </div>
+</div>
+<div id="mode" class="desktop">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-3 draggable">Draggable Element</div>
+        </div>
+        <div class="row">
+            <div class="resize-drag col-1" data-last-col="1">
+                Resize from any edge or corner
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 </html>
