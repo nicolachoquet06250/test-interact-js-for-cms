@@ -36,17 +36,21 @@
         </div>
     </div>
 </div>
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-2"></div>
+    </div>
+</div>
 <div id="mode" class="desktop">
-    <div class="container-fluid">
+    <!--<div class="container-fluid">
         <div class="row">
             <div class="col-3 draggable">Draggable Element</div>
         </div>
         <div class="row">
-            <div class="resize-drag col-1" data-last-col="1">
-                Resize from any edge or corner
-            </div>
+            <div class="resize-drag col-1">col-1</div>
+            <div class="resize-drag col-2">col-2</div>
         </div>
-    </div>
+    </div>-->
 </div>
 </body>
 </html>
