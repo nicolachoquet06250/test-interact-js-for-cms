@@ -1,11 +1,11 @@
-const position = { x: 0, y: 0 };
+const position = {x: 0, y: 0};
 
 interact('.draggable').draggable({
     listeners: {
-        start (event) {
+        start(event) {
             console.log(event.type, event.target)
         },
-        move (event) {
+        move(event) {
             position.x += event.dx;
             position.y += event.dy;
 
@@ -46,7 +46,7 @@ interact('.resize-drag').dropzone({
 const bootstrap_grid_max_cols = 12;
 interact('.resize-drag')
     .resizable({
-        edges: { left: true, right: true, bottom: true, top: true },
+        edges: {left: true, right: true, bottom: true, top: true},
     })
     .on('resizemove', event => {
         const device = window.device_mode === 'desktop' ? 'lg' : (window.device_mode === 'tablet' ? 'md' : 'sm');
@@ -58,16 +58,16 @@ interact('.resize-drag')
         let y = (parseFloat(target.getAttribute('data-y')) || 0);
         let last_col = target.getAttribute(`data-last-col-${device}`);
         let last_class = 'col-1';
-        for(let classe of target.classList) {
-            if(classe.indexOf('col-') !== -1) {
+        for (let classe of target.classList) {
+            if (classe.indexOf('col-') !== -1) {
                 last_class = classe;
                 break;
             }
         }
 
         let classes = last_col !== null ? `col-${target.getAttribute(`data-last-col-${device}`)}` : last_class;
-        for(let i = 1; i <= 12; i++) {
-            if(isCol(i)) {
+        for (let i = 1; i <= 12; i++) {
+            if (isCol(i)) {
                 target.classList.remove(classes);
                 classes = `col-${i}`;
                 target.classList.add(classes);
@@ -89,33 +89,74 @@ interact('.resize-drag')
 
         target.setAttribute('data-x', x);
         target.setAttribute('data-y', y);
-        target.textContent = classes
+        target.querySelector('span').textContent = classes;
+
+        updates[target.tagName.toLowerCase()](target);
+
     });
 
-function create_page(page_data, first = true, parent = null) {
-    if(first) window.page_data = page_data;
+function create_page(page_data, page_name, first = true, parent = null, json_index = '') {
+    window.page_name = page_name;
+    if (first) window.page_data = page_data;
 
-    for(let data of page_data) {
-        if(data.type === "text") {
-            console.log(parent);
-            parent.innerHTML = data.content;
-        } else {
-            let element = document.createElement(data.type);
-            for(let _class of data.classes) element.classList.add(_class);
-            parent.append(element);
-            create_page(data.content, false, element)
-        }
+    let index = 0;
+    for (let data of page_data) {
+        let current_json_index = json_index + '[' + index + '].content';
+        let classes = data.classes || [];
+        let type = data.type;
+
+        if (data.type === "text") type = 'span';
+
+        let element = document.createElement(type);
+        element.setAttribute('data-json-index', current_json_index);
+        element.classList.add(...classes);
+
+        if (data.type === 'text') element.innerHTML = data.content;
+        else create_page(data.content, page_name, false, element, current_json_index);
+
+        parent.append(element);
+        index++;
     }
 }
 
 function get_page(name) {
-    return fetch(`/api/page/${name}`, {
-        method: 'get',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }).then(r => r.json());
+    return new Promise((resolve, reject) => {
+        fetch(`/api/page/${name}`, {
+            method: 'get',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(r => r.json()).then(json => resolve({data: json, page_name: name})).catch(reject);
+    });
 }
+
+var updates = {
+    div: function (div, page_name) {
+        let json_index = div.getAttribute('data-json-index').substr(0, div.getAttribute('data-json-index').length - '.content'.length);
+        let classes = [];
+        for(let _class of div.classList.values()) {
+            if(_class.indexOf('col-') === -1) classes.push(_class);
+        }
+        if(div.getAttribute('data-last-col-sm') !== null && div.getAttribute('data-last-col-sm') !== undefined) {
+            classes.push('col-sm-' + div.getAttribute('data-last-col-sm'));
+        }
+        if(div.getAttribute('data-last-col-md') !== null && div.getAttribute('data-last-col-md') !== undefined) {
+            classes.push('col-md-' + div.getAttribute('data-last-col-md'));
+        }
+        if(div.getAttribute('data-last-col-lg') !== null && div.getAttribute('data-last-col-lg') !== undefined) {
+            classes.push('col-lg-' + div.getAttribute('data-last-col-lg'));
+        }
+
+        let div_content = JSON.stringify({
+            type: 'div',
+            classes: classes,
+            content: [{type: 'text', content: div.querySelector('span').textContent}]
+        });
+
+        eval('window.page_data' + json_index + ' = ' + div_content);
+        save_page(window.page_name).then(json => console.log(json))
+    }
+};
 
 function save_page(name) {
     return fetch(`/api/page/${name}`, {
@@ -127,63 +168,91 @@ function save_page(name) {
     }).then(r => r.json());
 }
 
-window.addEventListener('load', () => {
-    window.device_mode = 'desktop';
-    window.page_data = {};
-    document.querySelector('#desktop-btn').addEventListener('click', () => {
-        document.querySelector('#mode').classList.remove('tablet', 'mobile');
-        document.querySelector('#mode').classList.add('desktop');
+function create_buttons(parent, buttons) {
+    let row = document.createElement('div');
+    row.classList.add('row');
+    for (let button of buttons) {
+        let col = document.createElement('div');
+        col.classList.add('col', 'text-center');
+        let _button = document.createElement('button');
+        _button.classList.add('btn', 'btn-primary');
+        _button.setAttribute('type', 'button');
+        _button.innerHTML = button.text;
+        _button.addEventListener('click', button.on_click);
+        col.append(_button);
+        row.append(col);
+    }
+
+    parent.append(row);
+    let spacer = document.createElement('div');
+    spacer.classList.add('row');
+    let spacer_col = document.createElement('div');
+    spacer_col.classList.add('col-12', 'mb-2');
+    spacer.append(spacer_col);
+    parent.append(spacer);
+}
+
+function mode_switcher(activate = true, switcher_container = null, buttons_parent = null) {
+    let _switch = {
+        desktop: switcher_container => {
+            switcher_container.classList.remove('tablet', 'mobile');
+            switcher_container.classList.add('desktop');
+        },
+        tablet: switcher_container => {
+            switcher_container.classList.remove('desktop', 'mobile');
+            switcher_container.classList.add('tablet');
+        },
+        mobile: switcher_container => {
+            switcher_container.classList.remove('tablet', 'desktop');
+            switcher_container.classList.add('mobile');
+        }
+    };
+
+    function button_callback(switcher_container, device_mode) {
+        const device = device_mode === 'desktop' ? 'lg' : (device_mode === 'tablet' ? 'md' : 'sm');
+        _switch[device_mode](switcher_container);
+        window.device_mode = device_mode;
+        for (let elem of document.querySelectorAll('.row .resize-drag')) {
+            for (let i = 0; i <= 12; i++) {
+                elem.classList.remove(`col-${i}`);
+            }
+        }
+        for (let elem of document.querySelectorAll('.row .resize-drag')) {
+            let last_col = elem.getAttribute(`data-last-col-${device}`);
+            let classes = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
+            elem.classList.add(classes);
+            elem.innerHTML = classes;
+        }
+    }
+
+    if (activate) {
         window.device_mode = 'desktop';
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            for(let i = 0; i <= 12; i++) {
-                elem.classList.remove(`col-${i}`);
+        create_buttons(buttons_parent, [
+            {
+                text: 'Desktop',
+                on_click: () => button_callback(switcher_container, 'desktop')
+            },
+            {
+                text: 'Tablet',
+                on_click: () => button_callback(switcher_container, 'tablet')
+            },
+            {
+                text: 'Mobile',
+                on_click: () => button_callback(switcher_container, 'mobile')
             }
-        }
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            const device = 'lg';
-            let last_col = elem.getAttribute(`data-last-col-${device}`);
-            let classes = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
-            elem.classList.add(classes);
-            elem.innerHTML = classes;
-        }
-    });
-    document.querySelector('#tablet-btn').addEventListener('click', () => {
-        document.querySelector('#mode').classList.remove('mobile', 'desktop');
-        document.querySelector('#mode').classList.add('tablet');
-        window.device_mode = 'tablet';
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            for(let i = 0; i <= 12; i++) {
-                elem.classList.remove(`col-${i}`);
-            }
-        }
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            const device = 'md';
-            let last_col = elem.getAttribute(`data-last-col-${device}`);
-            let classes = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
-            elem.classList.add(classes);
-            elem.innerHTML = classes;
-        }
-    });
-    document.querySelector('#mobile-btn').addEventListener('click', () => {
-        document.querySelector('#mode').classList.remove('tablet', 'desktop');
-        document.querySelector('#mode').classList.add('mobile');
-        window.device_mode = 'mobile';
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            for(let i = 0; i <= 12; i++) {
-                elem.classList.remove(`col-${i}`);
-            }
-        }
-        for(let elem of document.querySelectorAll('.row .resize-drag')) {
-            const device = 'sm';
-            let last_col = elem.getAttribute(`data-last-col-${device}`);
-            let classes = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
-            elem.classList.add(classes);
-            elem.innerHTML = classes;
-        }
-    });
+        ]);
+    }
+}
+
+window.addEventListener('load', () => {
+    window.page_data = {};
+    mode_switcher(true,
+        document.querySelector('.mode_switcher-container'),
+        document.querySelector('.mode_switcher-buttons')
+    );
 
     get_page('index')
         .then(json =>
-            create_page(json, true, document.querySelector('#mode'))
+            create_page(json.data, json.page_name, true, document.querySelector('.mode_switcher-container'))
         );
 });

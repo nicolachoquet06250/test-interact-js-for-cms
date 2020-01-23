@@ -13,7 +13,7 @@ router.get('/page/:name', function(req, res) {
 });
 
 router.put('/page/:name', function (req, res) {
-  fs.writeFileSync(`${__dirname}/../datas/${req.param('name')}.json`, req.body.page);
+  fs.writeFileSync(`${__dirname}/../datas/${req.param('name')}.json`, JSON.stringify(req.body));
   res.json({
     message: 'respond with a resource'
   });
