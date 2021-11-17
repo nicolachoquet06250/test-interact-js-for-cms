@@ -53,11 +53,14 @@ interact('.resize-drag')
         const col_1 = Math.round(event.target.parentElement.offsetWidth / bootstrap_grid_max_cols);
         const width = Math.round(event.rect.width);
         const isCol = i => width > col_1 * i && width < col_1 * (i + 1);
+        const isOffset = (i, x) => x > col_1 * i && x < col_1 * (i + 1);
         let target = event.target;
         let x = (parseFloat(target.getAttribute('data-x')) || 0);
         let y = (parseFloat(target.getAttribute('data-y')) || 0);
         let last_col = target.getAttribute(`data-last-col-${device}`);
+        let last_offset = target.getAttribute(`data-last-offset-${device}`);
         let last_class = 'col-1';
+        let last_class_offset = 'offset-0';
         for (let classe of target.classList) {
             if (classe.indexOf('col-') !== -1) {
                 last_class = classe;
@@ -84,8 +87,19 @@ interact('.resize-drag')
         x += event.deltaRect.left;
         y += event.deltaRect.top;
 
-        target.style.webkitTransform = target.style.transform =
-            'translate(' + x + 'px,' + y + 'px)';
+        let classes_offset = last_offset !== null ? `offset-${target.getAttribute(`data-last-offset-${device}`)}` : last_class_offset;
+        for (let i = 0; i <= 11; i++) {
+            if (isOffset(i, x)) {
+                target.classList.remove(classes_offset);
+                classes_offset = `offset-${i}`;
+                target.classList.add(classes_offset);
+                target.setAttribute(`data-last-offset-${device}`, i);
+                break;
+            }
+        }
+
+        // target.style.webkitTransform = target.style.transform =
+        //     'translate(' + x + 'px,' + y + 'px)';
 
         target.setAttribute('data-x', x);
         target.setAttribute('data-y', y);
@@ -97,6 +111,7 @@ interact('.resize-drag')
 
 function create_page(page_data, page_name, first = true, parent = null, json_index = '') {
     window.page_name = page_name;
+    const device = window.device_mode === 'desktop' ? 'lg' : (window.device_mode === 'tablet' ? 'md' : 'sm');
     if (first) window.page_data = page_data;
 
     let index = 0;
@@ -104,12 +119,48 @@ function create_page(page_data, page_name, first = true, parent = null, json_ind
         let current_json_index = json_index + '[' + index + '].content';
         let classes = data.classes || [];
         let type = data.type;
+        let style = data.style;
 
         if (data.type === "text") type = 'span';
 
         let element = document.createElement(type);
         element.setAttribute('data-json-index', current_json_index);
+        if(style !== undefined) {
+            for(let prop in style) {
+                element.style[prop] = style[prop];
+            }
+        }
         element.classList.add(...classes);
+
+        for(let i = 1; i <= 10; i++) {
+            if(element.classList.contains(`col-lg-${i}`)) {
+                element.classList.remove(`col-lg-${i}`);
+                element.classList.add(`col-${i}`);
+                element.setAttribute('data-last-col-lg', i.toString());
+            }
+            if(element.classList.contains(`col-md-${i}`)) {
+                element.classList.remove(`col-md-${i}`);
+                element.setAttribute('data-last-col-md', i.toString());
+            }
+            if(element.classList.contains(`col-sm-${i}`)) {
+                element.classList.remove(`col-sm-${i}`);
+                element.setAttribute('data-last-col-sm', i.toString());
+            }
+
+            if(element.classList.contains(`offset-lg-${i}`)) {
+                element.classList.remove(`offset-lg-${i}`);
+                element.classList.add(`offset-${i}`);
+                element.setAttribute('data-last-offset-lg', i.toString());
+            }
+            if(element.classList.contains(`offset-md-${i}`)) {
+                element.classList.remove(`offset-md-${i}`);
+                element.setAttribute('data-last-offset-md', i.toString());
+            }
+            if(element.classList.contains(`offset-sm-${i}`)) {
+                element.classList.remove(`offset-sm-${i}`);
+                element.setAttribute('data-last-offset-sm', i.toString());
+            }
+        }
 
         if (data.type === 'text') element.innerHTML = data.content;
         else create_page(data.content, page_name, false, element, current_json_index);
@@ -126,12 +177,15 @@ function get_page(name) {
             headers: {
                 'Content-Type': 'application/json'
             }
-        }).then(r => r.json()).then(json => resolve({data: json, page_name: name})).catch(reject);
+        }).then(r => r.json()).then(json => resolve({
+            data: json,
+            page_name: name
+        })).catch(reject);
     });
 }
 
 var updates = {
-    div: function (div, page_name) {
+    div: function (div) {
         let json_index = div.getAttribute('data-json-index').substr(0, div.getAttribute('data-json-index').length - '.content'.length);
         let classes = [];
         for(let _class of div.classList.values()) {
@@ -150,6 +204,7 @@ var updates = {
         let div_content = JSON.stringify({
             type: 'div',
             classes: classes,
+            style: div.style,
             content: [{type: 'text', content: div.querySelector('span').textContent}]
         });
 
@@ -215,13 +270,16 @@ function mode_switcher(activate = true, switcher_container = null, buttons_paren
         for (let elem of document.querySelectorAll('.row .resize-drag')) {
             for (let i = 0; i <= 12; i++) {
                 elem.classList.remove(`col-${i}`);
+                elem.classList.remove(`offset-${i}`);
             }
         }
         for (let elem of document.querySelectorAll('.row .resize-drag')) {
             let last_col = elem.getAttribute(`data-last-col-${device}`);
-            let classes = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
-            elem.classList.add(classes);
-            elem.innerHTML = classes;
+            let last_offset = elem.getAttribute(`data-last-offset-${device}`);
+            let col_class = last_col !== null ? `col-${elem.getAttribute(`data-last-col-${device}`)}` : `col-1`;
+            let offset_class = last_offset !== null ? `offset-${elem.getAttribute(`data-last-offset-${device}`)}` : `offset-0`;
+            elem.classList.add(col_class, offset_class);
+            elem.innerHTML = col_class + ' ' + offset_class;
         }
     }
 

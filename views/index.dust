@@ -25,12 +25,5 @@
 <p>Welcome to {title}</p>
 <div class="container-fluid mode_switcher-buttons"></div>
 <div id="mode" class="desktop mode_switcher-container"></div>
-<div class="container-fluid">
-    <div class="row pt-2">
-        <div class="col-12">
-            <button type="button" class="btn btn-primary">Valider la page</button>
-        </div>
-    </div>
-</div>
 </body>
 </html>
